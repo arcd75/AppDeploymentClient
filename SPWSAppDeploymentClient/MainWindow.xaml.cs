@@ -6,17 +6,9 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace SPWSAppDeploymentClient
 {
@@ -31,21 +23,7 @@ namespace SPWSAppDeploymentClient
         int fi = 0;
         Dictionary<AppFile, byte[]> filesList = new Dictionary<AppFile, byte[]>();
         RegistryKey rk;
-        string mainExecutable =
-            "";
-        public MainWindow()
-        {
-            InitializeComponent();
-            double width = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Width;
-            double height = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Height;
-            this.Left = width - this.Width;
-            this.Top = height - this.Height;
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            Startup();
-        }
+        string mainExecutable = "";
 
         private Task Startup()
         {
@@ -91,14 +69,6 @@ namespace SPWSAppDeploymentClient
                 }
 
             });
-        }
-
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.F8)
-            {
-                OpenSettings();
-            }
         }
 
         private async Task<bool> SettingsCheck()
@@ -147,7 +117,7 @@ namespace SPWSAppDeploymentClient
                         //    }
                         //}
                         string line = sr.ReadLine().Split('=')[1];
-                        rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line,true);
+                        rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line, true);
                         if (rk == null)
                         {
                             rk = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line);
@@ -168,8 +138,8 @@ namespace SPWSAppDeploymentClient
                             settings.AppName = rk.GetValue("AppName").ToString();
                         if (rk.GetValue("AppVersion") != null)
                             settings.AppVersion = rk.GetValue("AppVersion").ToString();
-                        
-                        
+
+
                         if (
                             string.IsNullOrEmpty(settings.Server) ||
                             string.IsNullOrEmpty(settings.Username) ||
@@ -178,7 +148,7 @@ namespace SPWSAppDeploymentClient
                         {
                             //MessageBox.Show("Invalid settings file", "Settings file is either incomplete or has problems..." + Environment.NewLine + "Opening settings window");
                             PostNotice("Settings file has problems... please try to correct parameters!");
-                            result =  OpenSettings().Result;
+                            result = OpenSettings().Result;
                             Startup();
                         }
                         else
@@ -194,7 +164,7 @@ namespace SPWSAppDeploymentClient
                     settings = new Settings();
                     PostNotice("No settings detected... please enter parameters.");
                     //MessageBox.Show("No settings detected... Opening settings menu");
-                    result =  OpenSettings().Result;
+                    result = OpenSettings().Result;
                     Startup();
                 }
 
@@ -234,42 +204,6 @@ namespace SPWSAppDeploymentClient
             return result;
         }
 
-        private async Task<bool> OpenSettings()
-        {
-            bool result = false;
-            try
-            {
-                await Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    SettingsWindow sw = new SettingsWindow(settings);
-                    sw.Owner = this;
-                    sw.ShowInTaskbar = false;
-                    sw.ShowDialog();
-                    if (sw.DialogResult == true)
-                    {
-                        PostNotice("Settings set! ");
-                        result = true;
-                    }
-                    else
-                    {
-                        result = false;
-                        Environment.Exit(1);
-                    }
-                }));
-            }
-            catch (Exception ex)
-            {
-                PostNotice("An error has occured:" + ex.Message);
-                Dispatcher.Invoke(() =>
-                {
-                    CreateErrorLog(ex);
-                });
-                //throw;
-            }
-
-            return result;
-        }
-
         private async Task<bool> VersionCheck()
         {
             bool result = false;
@@ -306,6 +240,49 @@ namespace SPWSAppDeploymentClient
                 //throw;
             }
             return result;
+        }
+
+        private async void ProcessVersions(List<AppVersion> appVersions)
+        {
+            filesList.Clear();
+            int i = 0;
+            int appVersionCount = 0;
+            PostNotice("Updating...");
+            foreach (var appVersion in appVersions)
+            {
+                appVersionCount++;
+                PostNotice(appVersionCount + " / " + appVersions.Count + ": " + "Updating...Getting files for version..." + appVersion.AppVersionName);
+                var appFiles = await appVersion.GetAllFiles(settings);
+                int appFileCount = 0;
+                foreach (var appFile in appFiles)
+                {
+                    appFileCount++;
+                    fi++;
+                    PostNotice(appVersionCount + " / " + appVersions.Count + ": " + "Updating...Getting files for version..." + appVersion.AppVersionName + " : " + appFileCount + " / " + appFiles.Count);
+                    if (appFile.AppFileSize != "0")
+                    {
+                        byte[] blob = await appFile.GetData(settings);
+                        filesList.Add(appFile, blob);
+                    }
+                    else
+                    {
+                        filesList.Add(appFile, null);
+                    }
+                    double a = (double)fi;
+                    double flCount = (double)appFiles.Count;
+                    double res = (a / flCount) * 100;
+                    UpdateSubProgBar(res);
+                }
+            }
+            PostNotice("Processing...");
+            foreach (var appVersion in appVersions)
+            {
+                fi = 0;
+                PostNotice("Processing AppVer: " + i + " out of " + appVersions.Count);
+                string currentDirectory = Environment.CurrentDirectory;
+                processFiles(0, filesList, appVersion, currentDirectory);
+                rk.SetValue("AppVersion", appVersion.AppVersionName);
+            }
         }
 
         private async Task<bool> UpdateApp()
@@ -355,119 +332,6 @@ namespace SPWSAppDeploymentClient
 
 
             return result;
-        }
-
-        public static void CreateErrorLog(Exception ex)
-        {
-            
-                string currentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
-            string ErrorLogFilePath = currentDirectory + "/ErrorLogs/" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
-            if (!System.IO.Directory.Exists(currentDirectory + "/ErrorLogs"))
-            {
-                System.IO.Directory.CreateDirectory(currentDirectory + "/ErrorLogs");
-            }
-
-            using (StreamWriter sw = File.Exists(ErrorLogFilePath) ? File.AppendText(ErrorLogFilePath) : File.CreateText(ErrorLogFilePath))
-            {
-                sw.WriteLine("-----------------------");
-                sw.WriteLine("Message: " + ex.Message);
-                sw.WriteLine("Date: " + DateTime.Now.ToString("MMMM d, yyyy h:mm:ss tt"));
-                sw.WriteLine("StackTrace: " + ex.StackTrace);
-                sw.WriteLine("InnerException: " + ex.InnerException);
-            }
-            
-            //MessageBox.Show(Application.Current.MainWindow, "Something went wrong. Please see / send this file to the developers: " + ErrorLogFilePath);
-        }
-
-        private void RunApp()
-        {
-            var currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            //var directoryInfo = new DirectoryInfo(currentDirectory);
-            if (File.Exists(currentDirectory + "\\" + mainExecutable))
-            {
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    var process = new Process();
-                    process.StartInfo.FileName = currentDirectory + "\\" + mainExecutable;
-                    process.EnableRaisingEvents = true;
-                    process.Exited += Process_Exited;
-                    process.Start();
-                    this.ShowInTaskbar = false;
-                    this.WindowState = WindowState.Minimized;
-
-
-                }));
-            }
-
-        }
-
-        private void Process_Exited(object sender, EventArgs e)
-        {
-            Environment.Exit(1);
-            //throw new NotImplementedException();
-        }
-
-        private void PostNotice(string Message)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                txtMessage.Text = Message;
-
-            }));
-        }
-
-        //private void UpdateCompareFile(string currentDirectory)
-        //{
-        //    string[] files = Directory.GetFiles(currentDirectory);
-        //    string[] directory = Directory.GetDirectories(currentDirectory);
-        //    //var currentFolder = filesList.FirstOrDefault(fl => fl.Key.isFolder && fl.Key.AppFileId == )
-        //    foreach (var file in files)
-        //    {
-
-        //    }
-        //}
-
-        private async void ProcessVersions(List<AppVersion> appVersions)
-        {
-            filesList.Clear();
-            int i = 0;
-            int appVersionCount = 0;
-            PostNotice("Updating...");
-            foreach (var appVersion in appVersions)
-            {
-                appVersionCount++;
-                PostNotice(appVersionCount + " / " + appVersions.Count + ": " + "Updating...Getting files for version..." + appVersion.AppVersionName);
-                var appFiles = await appVersion.GetAllFiles(settings);
-                int appFileCount = 0;
-                foreach (var appFile in appFiles)
-                {
-                    appFileCount++;
-                    fi++;
-                    PostNotice(appVersionCount + " / " + appVersions.Count + ": " + "Updating...Getting files for version..." + appVersion.AppVersionName + " : " + appFileCount + " / " + appFiles.Count);
-                    if (appFile.AppFileSize != "0")
-                    {
-                        byte[] blob = await appFile.GetData(settings);
-                        filesList.Add(appFile, blob);
-                    }
-                    else
-                    {
-                        filesList.Add(appFile, null);
-                    }
-                    double a = (double)fi;
-                    double flCount = (double)appFiles.Count;
-                    double res = (a / flCount) * 100;
-                    UpdateSubProgBar(res);
-                }
-            }
-            PostNotice("Processing...");
-            foreach (var appVersion in appVersions)
-            {
-                fi = 0;
-                PostNotice("Processing AppVer: " + i + " out of " + appVersions.Count);
-                string currentDirectory = Environment.CurrentDirectory;
-                processFiles(0, filesList, appVersion, currentDirectory);
-                rk.SetValue("AppVersion", appVersion.AppVersionName);
-            }
         }
 
         private void processFiles(int FolderId, Dictionary<AppFile, byte[]> filesList, AppVersion appVersion, string currentDirectory)
@@ -538,6 +402,73 @@ namespace SPWSAppDeploymentClient
 
         }
 
+        private void RunApp()
+        {
+            var currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            //var directoryInfo = new DirectoryInfo(currentDirectory);
+            if (File.Exists(currentDirectory + "\\" + mainExecutable))
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var process = new Process();
+                    process.StartInfo.FileName = currentDirectory + "\\" + mainExecutable;
+                    process.EnableRaisingEvents = true;
+                    process.Exited += Process_Exited;
+                    process.Start();
+                    this.ShowInTaskbar = false;
+                    this.WindowState = WindowState.Minimized;
+
+
+                }));
+            }
+
+        }
+
+        private async Task<bool> OpenSettings()
+        {
+            bool result = false;
+            try
+            {
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    SettingsWindow sw = new SettingsWindow(settings);
+                    sw.Owner = this;
+                    sw.ShowInTaskbar = false;
+                    sw.ShowDialog();
+                    if (sw.DialogResult == true)
+                    {
+                        PostNotice("Settings set! ");
+                        result = true;
+                    }
+                    else
+                    {
+                        result = false;
+                        Environment.Exit(1);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                PostNotice("An error has occured:" + ex.Message);
+                Dispatcher.Invoke(() =>
+                {
+                    CreateErrorLog(ex);
+                });
+                //throw;
+            }
+
+            return result;
+        }
+
+        private void PostNotice(string Message)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                txtMessage.Text = Message;
+
+            }));
+        }
+
         private void UpdateMainProgBar(double a)
         {
             Dispatcher.BeginInvoke(new Action(() =>
@@ -563,12 +494,58 @@ namespace SPWSAppDeploymentClient
             {
                 mainExecutable = executable.Name;
             }
-            
+
             return mainExecutable != "";
         }
 
+        public static void CreateErrorLog(Exception ex)
+        {
 
+            string currentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+            string ErrorLogFilePath = currentDirectory + "/ErrorLogs/" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
+            if (!System.IO.Directory.Exists(currentDirectory + "/ErrorLogs"))
+            {
+                System.IO.Directory.CreateDirectory(currentDirectory + "/ErrorLogs");
+            }
 
-        //private 
+            using (StreamWriter sw = File.Exists(ErrorLogFilePath) ? File.AppendText(ErrorLogFilePath) : File.CreateText(ErrorLogFilePath))
+            {
+                sw.WriteLine("-----------------------");
+                sw.WriteLine("Message: " + ex.Message);
+                sw.WriteLine("Date: " + DateTime.Now.ToString("MMMM d, yyyy h:mm:ss tt"));
+                sw.WriteLine("StackTrace: " + ex.StackTrace);
+                sw.WriteLine("InnerException: " + ex.InnerException);
+            }
+
+            //MessageBox.Show(Application.Current.MainWindow, "Something went wrong. Please see / send this file to the developers: " + ErrorLogFilePath);
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            double width = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Width;
+            double height = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Height;
+            Left = width - this.Width;
+            Top = height - this.Height;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Startup();
+        }        
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F8)
+            {
+                OpenSettings();
+            }
+        }
+
+        private void Process_Exited(object sender, EventArgs e)
+        {
+            Environment.Exit(1);
+            //throw new NotImplementedException();
+        }
     }
 }
