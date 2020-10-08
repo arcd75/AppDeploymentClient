@@ -3,3 +3,5 @@
 ################################################################################
 
 /.vs/SPWSAppDeploymentClient/v15
+/SPWSAppDeploymentClient/bin
+/SPWSAppDeploymentClient/obj

@@ -1,0 +1,63 @@
+﻿<Window x:Class="SPWSAppDeploymentClient.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SPWSAppDeploymentClient"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen"
+        Title="SettingsWindow" Height="250" Width="150" Loaded="Window_Loaded">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource ThemeColorMain}">
+            <TextBlock Text="Server settings" VerticalAlignment="Center" Foreground="White" Margin="5"/>
+        </Border>
+        <TextBlock  Grid.Row="1"    VerticalAlignment="Center" Text="Server: " Margin="5"/>
+        <TextBox    Grid.Row="1"   Grid.Column="1" VerticalAlignment="Center" Margin="5" x:Name="txtServer" TextChanged="TxtServer_TextChanged"/>
+        <TextBlock  Grid.Row="2"    VerticalAlignment="Center" Text="Username: " Margin="5"/>
+        <PasswordBox    Grid.Row="2"   Grid.Column="1" VerticalAlignment="Center" Margin="5" x:Name="txtUsername" PasswordChanged="TxtUsername_PasswordChanged"/>
+        <TextBlock  Grid.Row="3"    VerticalAlignment="Center" Text="Password: "  Margin="5"/>
+        <PasswordBox    Grid.Row="3"   Grid.Column="1" VerticalAlignment="Center" Margin="5" x:Name="txtPassword" PasswordChanged="TxtPassword_PasswordChanged"/>
+        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Margin="5" Style="{DynamicResource ButtonFlatStyle}" IsDefault="True" x:Name="btnValidate" Click="BtnValidate_Click" >
+                <Border Background="{DynamicResource ThemeColorMain}" Padding="5">
+                    <TextBlock Text="Login" Foreground="White"/>
+                </Border>
+            </Button>
+        </StackPanel>
+        <TextBlock  Grid.Row="5"    VerticalAlignment="Center" Text="App: "  Margin="5"/>
+        <ComboBox Grid.Row="5" Grid.Column="1" Margin="5" x:Name="cmbApps">
+            
+        </ComboBox>
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <!--<Button Margin="5" Style="{DynamicResource ButtonFlatStyle}" >
+                <Border Background="{DynamicResource ThemeColorMain}" Padding="5">
+                    <TextBlock Text="Test" Foreground="White"/>
+                </Border>
+            </Button>-->
+            <Button Margin="5" Style="{DynamicResource ButtonFlatStyle}" IsDefault="True" x:Name="btnOk" Click="BtnOk_Click" >
+                <Border Background="{DynamicResource ThemeColorMain}" Padding="5">
+                    <TextBlock Text="Ok" Foreground="White"/>
+                </Border>
+            </Button>
+            <Button Margin="5" Style="{DynamicResource ButtonFlatStyle}" x:Name="btnCancel" IsCancel="True" >
+                <Border Background="{DynamicResource ThemeColorMain}" Padding="5">
+                    <TextBlock Text="Cancel" Foreground="White"/>
+                </Border>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>
