@@ -31,43 +31,26 @@ namespace SPWSAppDeploymentClient
             {
                 SqlConnection sql = new SqlConnection();
                 bool status = true;
+
                 status = SettingsCheck().Result;
                 UpdateMainProgBar(0);
                 UpdateSubProgBar(100);
-                if (status)
-                {
 
-                    status = ConnectionCheck().Result;
-                    //Dispatcher.BeginInvoke(new Action(() =>
-                    //{
-                    //    txtMessage.SelectedIndex = txtMessage.Items.Count - 1;
-                    //}));
-                }
+                if (status) { status = ConnectionCheck().Result; }
+
                 UpdateMainProgBar(20);
-                if (status)
-                {
 
-                    status = VersionCheck().Result;
-                }
+                if (status) { status = VersionCheck().Result; }
+
                 UpdateMainProgBar(40);
-                if (status == true && newVersions.Count != 0)
-                {
 
-                    status = UpdateApp().Result;
-                }
-                else
-                {
-                    scanMainExecutable();
-                }
+                if (status == true && newVersions.Count != 0) { status = UpdateApp().Result; }
+                else { scanMainExecutable(); }
+
                 UpdateMainProgBar(60);
                 UpdateMainProgBar(100);
 
-                if (mainExecutable != "")
-                {
-
-                    RunApp();
-                }
-
+                if (mainExecutable != "") { RunApp(); }
             });
         }
 
@@ -77,93 +60,47 @@ namespace SPWSAppDeploymentClient
 
             try
             {
-
                 PostNotice("Settings check...");
                 var currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
                 if (File.Exists(currentDirectory + "/settings.ini"))
                 {
                     PostNotice("Settings detected!");
+
                     using (StreamReader sr = new StreamReader(currentDirectory + "/settings.ini"))
                     {
-                        settings = new Settings();
-                        //while (!sr.EndOfStream)
-                        //{
-                        //    var line = sr.ReadLine().Split('=');
-                        //    switch (line[0])
-                        //    {
-                        //        case "Server":
-                        //            settings.Server = line[1];
-                        //            break;
-                        //        case "Username":
-                        //            settings.Username = line[1];
-                        //            break;
-                        //        case "Password":
-                        //            settings.Password = line[1];
-                        //            break;
-                        //        case "AppId":
-                        //            int AppId = 0;
-                        //            int.TryParse(line[1], out AppId);
-                        //            settings.AppId = AppId;
-                        //            break;
-                        //        case "AppName":
-                        //            settings.AppName = line[1];
-                        //            break;
-                        //        case "AppVersion":
-                        //            settings.AppVersion = line[1];
-                        //            break;
-
-                        //        default:
-                        //            break;
-                        //    }
-                        //}
                         string line = sr.ReadLine().Split('=')[1];
+
+                        settings = new Settings();
                         rk = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line, true);
-                        if (rk == null)
-                        {
-                            rk = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line);
-                        }
-                        if (rk.GetValue("Server") != null)
-                            settings.Server = rk.GetValue("Server").ToString();
-                        if (rk.GetValue("Username") != null)
-                            settings.Username = rk.GetValue("Username").ToString();
-                        if (rk.GetValue("Password") != null)
-                            settings.Password = rk.GetValue("Password").ToString();
+                        if (rk == null) { rk = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\SPWS\AppDeploymentClient\" + line); }
+                        if (rk.GetValue("Server") != null) { settings.Server = rk.GetValue("Server").ToString(); }
+                        if (rk.GetValue("Username") != null) { settings.Username = rk.GetValue("Username").ToString(); }
+                        if (rk.GetValue("Password") != null) { settings.Password = rk.GetValue("Password").ToString(); }
+
                         if (rk.GetValue("AppId") != null)
                         {
                             int AppId = 0;
                             int.TryParse(rk.GetValue("AppId").ToString(), out AppId);
                             settings.AppId = AppId;
                         }
-                        if (rk.GetValue("AppName") != null)
-                            settings.AppName = rk.GetValue("AppName").ToString();
-                        if (rk.GetValue("AppVersion") != null)
-                            settings.AppVersion = rk.GetValue("AppVersion").ToString();
 
+                        if (rk.GetValue("AppName") != null) { settings.AppName = rk.GetValue("AppName").ToString(); }
+                        if (rk.GetValue("AppVersion") != null) { settings.AppVersion = rk.GetValue("AppVersion").ToString(); }
 
-                        if (
-                            string.IsNullOrEmpty(settings.Server) ||
-                            string.IsNullOrEmpty(settings.Username) ||
-                            string.IsNullOrEmpty(settings.Password) ||
-                            settings.AppId == 0)
+                        if (string.IsNullOrEmpty(settings.Server) || string.IsNullOrEmpty(settings.Username) || string.IsNullOrEmpty(settings.Password) || settings.AppId == 0)
                         {
-                            //MessageBox.Show("Invalid settings file", "Settings file is either incomplete or has problems..." + Environment.NewLine + "Opening settings window");
                             PostNotice("Settings file has problems... please try to correct parameters!");
                             result = OpenSettings().Result;
                             Startup();
                         }
-                        else
-                        {
-                            result = true;
-                        }
-
-
+                        else { result = true; }
                     }
                 }
                 else
                 {
                     settings = new Settings();
                     PostNotice("No settings detected... please enter parameters.");
-                    //MessageBox.Show("No settings detected... Opening settings menu");
                     result = OpenSettings().Result;
                     Startup();
                 }
@@ -171,12 +108,8 @@ namespace SPWSAppDeploymentClient
             }
             catch (Exception ex)
             {
-
                 PostNotice("An error has occured. " + ex.Message);
                 CreateErrorLog(ex);
-
-
-                //throw;
             }
             return result;
         }
@@ -199,7 +132,6 @@ namespace SPWSAppDeploymentClient
             {
                 PostNotice("An error has occured:" + ex.Message);
                 CreateErrorLog(ex);
-                //throw;
             }
             return result;
         }
@@ -223,7 +155,6 @@ namespace SPWSAppDeploymentClient
                 {
                     newVersions = currentApp.AppVersions.Where(av => av.Date > currentVersion.Date).ToList();
                     result = true;
-
                 }
                 else
                 {
@@ -237,7 +168,6 @@ namespace SPWSAppDeploymentClient
             {
                 PostNotice("An error has occured:" + ex.Message);
                 CreateErrorLog(ex);
-                //throw;
             }
             return result;
         }
@@ -247,6 +177,7 @@ namespace SPWSAppDeploymentClient
             filesList.Clear();
             int i = 0;
             int appVersionCount = 0;
+
             PostNotice("Updating...");
             foreach (var appVersion in appVersions)
             {
@@ -264,16 +195,15 @@ namespace SPWSAppDeploymentClient
                         byte[] blob = await appFile.GetData(settings);
                         filesList.Add(appFile, blob);
                     }
-                    else
-                    {
-                        filesList.Add(appFile, null);
-                    }
+                    else { filesList.Add(appFile, null); }
+
                     double a = (double)fi;
                     double flCount = (double)appFiles.Count;
                     double res = (a / flCount) * 100;
                     UpdateSubProgBar(res);
                 }
             }
+
             PostNotice("Processing...");
             foreach (var appVersion in appVersions)
             {
@@ -290,7 +220,6 @@ namespace SPWSAppDeploymentClient
             bool result = false;
             try
             {
-
                 filesList.Clear();
 
                 if (newVersions.Any(av => av.isMajorRevision))
@@ -299,52 +228,26 @@ namespace SPWSAppDeploymentClient
                     var newVersionPlot = newVersions;
                     newVersions.RemoveAll(av => av.Date < currentMR.Date);
                     DeleteFiles(Environment.CurrentDirectory);
-
                 }
+
                 ProcessVersions(newVersions);
-                //foreach (var newVersion in newVersions)
-                //{
-                //    var appFiles = await newVersion.GetAllFiles(settings);
-                //foreach (var appFile in appFiles)
-                //{
-                //    byte[] blob = await appFile.GetData(settings);
-                //    filesList.Add(appFile, blob);
-                //}
-
-                //}
-
-
-
-                string currentDirectory = Environment.CurrentDirectory;
-                //UpdateCompareFile(currentDirectory);
-
                 result = true;
             }
             catch (Exception ex)
             {
                 PostNotice("An error has occured:" + ex.Message);
-                Dispatcher.Invoke(() =>
-                {
-                    CreateErrorLog(ex);
-                });
-                //throw;
+                Dispatcher.Invoke(() => { CreateErrorLog(ex); });
             }
-
 
             return result;
         }
 
         private void processFiles(int FolderId, Dictionary<AppFile, byte[]> filesList, AppVersion appVersion, string currentDirectory)
         {
-
             if (FolderId != 0)
             {
                 fi++;
-                if (!Directory.Exists(currentDirectory))
-                {
-                    Directory.CreateDirectory(currentDirectory);
-                }
-
+                if (!Directory.Exists(currentDirectory)) { Directory.CreateDirectory(currentDirectory); }
             }
             var currentVersionFiles = filesList.Where(fl => fl.Key.AppVersionId == appVersion.AppVersionId).ToList();
             var rootfiles = currentVersionFiles.Where(fl => fl.Key.AppFileSize != "0" && fl.Key.parentFolder == FolderId);
@@ -354,16 +257,13 @@ namespace SPWSAppDeploymentClient
             {
                 fi++;
                 PostNotice("Processing Files:" + fi + " out " + filesList.Count);
+
                 string filePath = currentDirectory + "\\" + rootFile.Key.AppFileName;
                 var splits = rootFile.Key.AppFileName.Split('.');
-                if (currentDirectory == Environment.CurrentDirectory && rootFile.Key.AppFileExt == "exe" && splits.Length == 2)
-                {
-                    mainExecutable = rootFile.Key.AppFileName;
-                }
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                }
+
+                if (currentDirectory == Environment.CurrentDirectory && rootFile.Key.AppFileExt == "exe" && splits.Length == 2) { mainExecutable = rootFile.Key.AppFileName; }
+                if (File.Exists(filePath)) { File.Delete(filePath); }
+
                 using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write))
                 {
                     BinaryWriter br = new BinaryWriter(fs);
@@ -371,9 +271,11 @@ namespace SPWSAppDeploymentClient
                     br.Dispose();
                 }
             }
+
             double a = (double)fi;
             double flCount = (double)filesList.Count;
             double res = (a / flCount) * 100;
+
             UpdateSubProgBar(res);
             foreach (var rootFolder in rootFolders)
             {
@@ -386,26 +288,23 @@ namespace SPWSAppDeploymentClient
             DirectoryInfo directoryInfo = new DirectoryInfo(Path);
             FileInfo[] info = directoryInfo.GetFiles();
             DirectoryInfo[] directories = directoryInfo.GetDirectories();
+
             foreach (var d in directories)
             {
                 DeleteFiles(d.FullName);
                 d.Delete();
             }
+
             foreach (FileInfo f in info)
             {
-                if (!(f.Name == "settings.ini" ||
-                    f.Name.ToLower().Contains("spwsappdeployment")))
-                {
-                    f.Delete();
-                }
+                if (!(f.Name == "settings.ini" || f.Name.ToLower().Contains("spwsappdeployment"))) { f.Delete(); }
             }
-
         }
 
         private void RunApp()
         {
             var currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            //var directoryInfo = new DirectoryInfo(currentDirectory);
+
             if (File.Exists(currentDirectory + "\\" + mainExecutable))
             {
                 Dispatcher.BeginInvoke(new Action(() =>
@@ -415,13 +314,10 @@ namespace SPWSAppDeploymentClient
                     process.EnableRaisingEvents = true;
                     process.Exited += Process_Exited;
                     process.Start();
-                    this.ShowInTaskbar = false;
-                    this.WindowState = WindowState.Minimized;
-
-
+                    ShowInTaskbar = false;
+                    WindowState = WindowState.Minimized;
                 }));
             }
-
         }
 
         private async Task<bool> OpenSettings()
@@ -450,11 +346,7 @@ namespace SPWSAppDeploymentClient
             catch (Exception ex)
             {
                 PostNotice("An error has occured:" + ex.Message);
-                Dispatcher.Invoke(() =>
-                {
-                    CreateErrorLog(ex);
-                });
-                //throw;
+                Dispatcher.Invoke(() => { CreateErrorLog(ex); });
             }
 
             return result;
@@ -462,27 +354,17 @@ namespace SPWSAppDeploymentClient
 
         private void PostNotice(string Message)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                txtMessage.Text = Message;
-
-            }));
+            Dispatcher.BeginInvoke(new Action(() => { txtMessage.Text = Message; }));
         }
 
         private void UpdateMainProgBar(double a)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                pbMain.Value = a;
-            }));
+            Dispatcher.BeginInvoke(new Action(() => { pbMain.Value = a; }));
         }
 
         private void UpdateSubProgBar(double a)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                pbSub.Value = a;
-            }));
+            Dispatcher.BeginInvoke(new Action(() => { pbSub.Value = a; }));
         }
 
         private bool scanMainExecutable()
@@ -490,23 +372,17 @@ namespace SPWSAppDeploymentClient
             DirectoryInfo di = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
             List<FileInfo> fi = di.GetFiles().ToList();
             var executable = fi.FirstOrDefault(f => f.Name.Split('.').Last() == "exe" && f.Name.Split('.').Length == 2 && f.Name != "SPWSAppDeploymentClient.exe");
-            if (executable != null)
-            {
-                mainExecutable = executable.Name;
-            }
+            if (executable != null) { mainExecutable = executable.Name; }
 
             return mainExecutable != "";
         }
 
         public static void CreateErrorLog(Exception ex)
         {
-
-            string currentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+            string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string ErrorLogFilePath = currentDirectory + "/ErrorLogs/" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
-            if (!System.IO.Directory.Exists(currentDirectory + "/ErrorLogs"))
-            {
-                System.IO.Directory.CreateDirectory(currentDirectory + "/ErrorLogs");
-            }
+
+            if (!Directory.Exists(currentDirectory + "/ErrorLogs")) { Directory.CreateDirectory(currentDirectory + "/ErrorLogs"); }
 
             using (StreamWriter sw = File.Exists(ErrorLogFilePath) ? File.AppendText(ErrorLogFilePath) : File.CreateText(ErrorLogFilePath))
             {
@@ -516,8 +392,6 @@ namespace SPWSAppDeploymentClient
                 sw.WriteLine("StackTrace: " + ex.StackTrace);
                 sw.WriteLine("InnerException: " + ex.InnerException);
             }
-
-            //MessageBox.Show(Application.Current.MainWindow, "Something went wrong. Please see / send this file to the developers: " + ErrorLogFilePath);
         }
 
         public MainWindow()
@@ -532,7 +406,7 @@ namespace SPWSAppDeploymentClient
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Startup();
-        }        
+        }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
@@ -545,7 +419,6 @@ namespace SPWSAppDeploymentClient
         private void Process_Exited(object sender, EventArgs e)
         {
             Environment.Exit(1);
-            //throw new NotImplementedException();
         }
     }
 }
