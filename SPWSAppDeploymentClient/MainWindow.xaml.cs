@@ -419,6 +419,7 @@ namespace SPWSAppDeploymentClient
         private void Process_Exited(object sender, EventArgs e)
         {
             Environment.Exit(1);
+            //try lang
         }
     }
 }
