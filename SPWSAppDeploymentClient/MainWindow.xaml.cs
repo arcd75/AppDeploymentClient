@@ -420,6 +420,7 @@ namespace SPWSAppDeploymentClient
         {
             Environment.Exit(1);
             //try lang
+            //try lang din
         }
     }
 }
